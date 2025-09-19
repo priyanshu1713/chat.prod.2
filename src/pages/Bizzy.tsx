@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
 import { ChatInterface } from "@/components/ChatInterface";
 
-const PMFPage = () => {
+const Bizzy = () => {
   return (
     <SidebarProvider defaultOpen={true} className="min-h-screen">
       <div className="flex min-h-screen w-full bg-background">
@@ -20,4 +20,4 @@ const PMFPage = () => {
   );
 };
 
-export default PMFPage;
+export default Bizzy;

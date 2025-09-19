@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
 import { ChatInterface } from "@/components/ChatInterface";
 
-const ValidatePage = () => {
+const Artie = () => {
   return (
     <SidebarProvider defaultOpen={true} className="min-h-screen">
       <div className="flex min-h-screen w-full bg-background">
@@ -20,4 +20,4 @@ const ValidatePage = () => {
   );
 };
 
-export default ValidatePage;
+export default Artie;

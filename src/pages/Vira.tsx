@@ -5,7 +5,7 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { HelpButton } from "@/components/HelpButton";
 import { QuickActionButton } from "@/components/QuickActionButton";
 
-const AllInOnePage = () => {
+const Vira = () => {
   return (
     <SidebarProvider defaultOpen={true} className="min-h-screen">
       <div className="flex min-h-screen w-full bg-background">
@@ -25,4 +25,4 @@ const AllInOnePage = () => {
   );
 };
 
-export default AllInOnePage;
+export default Vira;
