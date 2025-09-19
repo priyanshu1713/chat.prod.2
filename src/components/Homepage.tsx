@@ -20,22 +20,22 @@ const quickActions = [{
   id: "bizzy",
   title: "Bizzy",
   subtitle: "Business strategist",
-  path: "/validate"
+  path: "/bizzy"
 }, {
   id: "artie",
   title: "Artie", 
   subtitle: "Creative designer",
-  path: "/market-research"
+  path: "/artie"
 }, {
   id: "mak",
   title: "Mak",
   subtitle: "Social media handler", 
-  path: "/pmf"
+  path: "/mak"
 }, {
   id: "vira",
   title: "Vira",
   subtitle: "Virtual Co-Founder",
-  path: "/all-in-one"
+  path: "/vira"
 }];
 export function Homepage() {
   const navigate = useNavigate();

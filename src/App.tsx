@@ -8,10 +8,10 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Preloader from "./components/Preloader";
 import Index from "./pages/Index";
-import ValidatePage from "./pages/ValidatePage";
-import MarketResearchPage from "./pages/MarketResearchPage";
-import PMFPage from "./pages/PMFPage";
-import AllInOnePage from "./pages/AllInOnePage";
+import Bizzy from "./pages/Bizzy";
+import Artie from "./pages/Artie";
+import Mak from "./pages/Mak";
+import Vira from "./pages/Vira";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,10 +34,10 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/validate" element={<ValidatePage />} />
-                <Route path="/market-research" element={<MarketResearchPage />} />
-                <Route path="/pmf" element={<PMFPage />} />
-                <Route path="/all-in-one" element={<AllInOnePage />} />
+                <Route path="/bizzy" element={<Bizzy />} />
+                <Route path="/artie" element={<Artie />} />
+                <Route path="/mak" element={<Mak />} />
+                <Route path="/vira" element={<Vira />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

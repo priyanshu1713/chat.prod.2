@@ -5,32 +5,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCreditSystem } from '@/hooks/useCreditSystem';
 const quickActions = [{
-  id: 'validate',
+  id: 'bizzy',
   title: 'Bizzy',
   description: 'Business strategist, guides in growth and market expansion',
   icon: Lightbulb,
-  path: '/validate',
+  path: '/bizzy',
   color: 'text-blue-400'
 }, {
   id: 'research',
   title: 'Artie',
   description: 'Creative designer, assists with visuals and branding',
   icon: BarChart3,
-  path: '/market-research',
+  path: '/artie',
   color: 'text-green-400'
 }, {
-  id: 'pmf',
+  id: 'mak',
   title: 'Mak',
   description: 'Social media handler, automates posts and generates captions',
   icon: Target,
-  path: '/pmf',
+  path: '/mak',
   color: 'text-purple-400'
 }, {
-  id: 'all-in-one',
+  id: 'vira',
   title: 'Vira',
   description: 'Virtual Co-Founder, helps in making business decisions',
   icon: Sparkles,
-  path: '/',
+  path: '/vira',
   color: 'text-primary'
 }];
 export function QuickActionButton() {

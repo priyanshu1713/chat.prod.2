@@ -14,10 +14,10 @@ import { LoadingState } from "@/components/LoadingState";
 import { usePDFGenerator } from "@/hooks/usePDFGenerator";
 
 // Import agent profile images
-import ViraAvatar from "@/assets/ViraBg.png";
-import BizzyAvatar from "@/assets/BizzyBg.png";
-import ArtieAvatar from "@/assets/ArtieBg.png";
-import MakAvatar from "@/assets/MakBg.png";
+const ViraAvatar = "https://cdn.discordapp.com/attachments/1376501731860680724/1418165664937676810/Vira_DP.png?ex=68ce72b2&is=68cd2132&hm=ef8fca36e342d9dd9476d05425a17fcfe1af1b6b7bb71913bb0b526a31ad288a&";
+const BizzyAvatar = "https://cdn.discordapp.com/attachments/1376501731860680724/1418165664492949624/Chanak_DP.png?ex=68ce72b2&is=68cd2132&hm=feda67e5f70734afff73202bf65d8ab40708c2d3dd04db2682caa1a8765c15da&";
+const ArtieAvatar = "https://cdn.discordapp.com/attachments/1376501731860680724/1418165663834312755/Chitra_DP.png?ex=68ce72b2&is=68cd2132&hm=88b5c136d98cb88441080206c7ef27b67311e91c3e2ce0e8a1e6b73743e586d0&";
+const MakAvatar = "https://cdn.discordapp.com/attachments/1376501731860680724/1418672918648328223/suzzy2.png?ex=68cef99d&is=68cda81d&hm=8e3811e6c2449022c39928610702bc4f04bb258ccf932d27d9d56b8aea490b48";
 
 
 interface Message {
@@ -33,27 +33,27 @@ const moduleCards = [
     title: "Bizzy",
     description: "Business strategist, guides in growth and market expansion.",
     avatar: BizzyAvatar,
-    path: "/validate",
+    path: "/bizzy",
     color: "from-accent/20 to-accent/5"
   },
   {
-    id: "market-research", 
+    id: "artie", 
     title: "Artie",
     description: "Creative designer, assists with visuals and branding.",
     avatar: ArtieAvatar,
-    path: "/market-research",
+    path: "/artie",
     color: "from-primary/20 to-primary/5"
   },
   {
-    id: "pmf-analysis",
+    id: "mak",
     title: "Mak", 
     description: "Social media handler, automates posts and generates captions.",
     avatar: MakAvatar,
-    path: "/pmf",
+    path: "/mak",
     color: "from-secondary/40 to-secondary/10"
   },
   {
-    id: "all-in-one",
+    id: "vira",
     title: "Vira",
     description: "Virtual Co-Founder, helps in making business decisions.",
     avatar: ViraAvatar,
@@ -77,26 +77,26 @@ export function ChatInterface() {
   
   const getModuleInfo = () => {
     switch (location.pathname) {
-      case "/all-in-one":
+      case "/vira":
         return {
           title: "Vira",
           subtitle: "Virtual Co-Founder, helps in making business decisions.",
           description: "Complete validation covering idea, market, and PMF analysis.",
           avatar: ViraAvatar
         };
-      case "/validate":
+      case "/bizzy":
         return {
           title: "Bizzy",
           subtitle: "Business strategist, guides in growth and market expansion.",
           avatar: BizzyAvatar
         };
-      case "/market-research":
+      case "/artie":
         return {
           title: "Artie",
           subtitle: "Creative designer, assists with visuals and branding.",
           avatar: ArtieAvatar
         };
-      case "/pmf":
+      case "/mak":
         return {
           title: "Mak",
           subtitle: "Social media handler, automates posts and generates captions.",
@@ -171,8 +171,8 @@ export function ChatInterface() {
       return;
     }
 
-    // Call Stack-AI API for Vira (all-in-one page) and Chanak (validate page)
-    if (location.pathname === "/all-in-one" || location.pathname === "/validate") {
+    // Call Stack-AI API for Vira and Bizzy pages
+    if (location.pathname === "/vira" || location.pathname === "/bizzy") {
       try {
         // Prepare message with startup context if available
         const contextString = getContextString();
@@ -181,11 +181,11 @@ export function ChatInterface() {
           : userMessage.content;
 
         // Different API endpoints for different agents
-        const apiEndpoint = location.pathname === "/all-in-one" 
+        const apiEndpoint = location.pathname === "/vira" 
           ? 'https://api.stack-ai.com/inference/v0/run/82daafa8-4b94-431b-989d-d482e0c29e95/688b18a8a5b76f214fb2774d'
           : 'https://api.stack-ai.com/inference/v0/run/82daafa8-4b94-431b-989d-d482e0c29e95/68c18eb3d25e1a930c9ece2a';
 
-        const userId = location.pathname === "/all-in-one" 
+        const userId = location.pathname === "/vira" 
           ? `vira_${Date.now()}`
           : `chanak_${Date.now()}`;
 
@@ -305,12 +305,12 @@ export function ChatInterface() {
                         minute: '2-digit' 
                       })}
                     </p>
-                    {message.role === "assistant" && (location.pathname === "/all-in-one" || location.pathname === "/validate") && (
+                    {message.role === "assistant" && (location.pathname === "/vira" || location.pathname === "/bizzy") && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          const agentName = location.pathname === "/all-in-one" ? "Vira" : "Bizzy";
+                          const agentName = location.pathname === "/vira" ? "Vira" : "Bizzy";
                           generateReportPDF(message.content, agentName);
                         }}
                         className="h-6 px-2 text-xs hover:bg-accent/20"
@@ -343,7 +343,7 @@ export function ChatInterface() {
 
       {/* Input Area */}
       <div className="border-t border-border bg-surface/50 backdrop-blur-sm p-6">
-        {(location.pathname === '/market-research' || location.pathname === '/pmf') ? (
+        {(location.pathname === '/artie' || location.pathname === '/mak') ? (
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-center py-8">
               <div className="text-center space-y-3">
@@ -353,7 +353,7 @@ export function ChatInterface() {
                 </Avatar>
                 <h3 className="text-xl font-semibold text-foreground">Coming Soon</h3>
                 <p className="text-text-secondary max-w-md">
-                  {location.pathname === '/market-research' 
+                  {location.pathname === '/artie' 
                     ? 'Artie is getting ready to help with your creative designs and branding needs.' 
                     : 'Mak is preparing to assist with your social media automation and content generation.'}
                 </p>
