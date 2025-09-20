@@ -14,10 +14,10 @@ import { LoadingState } from "@/components/LoadingState";
 import { usePDFGenerator } from "@/hooks/usePDFGenerator";
 
 // Import agent profile images
-const ViraAvatar = "https://cdn.discordapp.com/attachments/1376501731860680724/1418165664937676810/Vira_DP.png?ex=68ce72b2&is=68cd2132&hm=ef8fca36e342d9dd9476d05425a17fcfe1af1b6b7bb71913bb0b526a31ad288a&";
-const BizzyAvatar = "https://cdn.discordapp.com/attachments/1376501731860680724/1418165664492949624/Chanak_DP.png?ex=68ce72b2&is=68cd2132&hm=feda67e5f70734afff73202bf65d8ab40708c2d3dd04db2682caa1a8765c15da&";
-const ArtieAvatar = "https://cdn.discordapp.com/attachments/1376501731860680724/1418165663834312755/Chitra_DP.png?ex=68ce72b2&is=68cd2132&hm=88b5c136d98cb88441080206c7ef27b67311e91c3e2ce0e8a1e6b73743e586d0&";
-const MakAvatar = "https://cdn.discordapp.com/attachments/1376501731860680724/1418672918648328223/suzzy2.png?ex=68cef99d&is=68cda81d&hm=8e3811e6c2449022c39928610702bc4f04bb258ccf932d27d9d56b8aea490b48";
+const ViraAvatar = "https://i.ibb.co/TB072BQ1/Vira.png";
+const BizzyAvatar = "https://i.ibb.co/xq7CpvL7/Bizzy.png";
+const ArtieAvatar = "https://i.ibb.co/C5Z5b9Mb/Artie.png";
+const MakAvatar = "https://i.ibb.co/W4xQfq9D/Mak.jpg";
 
 
 interface Message {
