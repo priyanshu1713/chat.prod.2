@@ -2,8 +2,8 @@ import { StartupData } from '@/hooks/useStartupContext';
 
 // Google Sheets API configuration
 const GOOGLE_SHEETS_API_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
-const SPREADSHEET_ID = process.env.VITE_GOOGLE_SHEETS_ID || 'your-spreadsheet-id';
-const API_KEY = process.env.VITE_GOOGLE_SHEETS_API_KEY || 'your-api-key';
+const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID || '1NruO3pEd2HoXBOt8uv_vV7Jzu5p_r9CBE2RnlkUSSzU';
+const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AIzaSyCxpRFx3PrK0BZxt9Vdf9AvTZdHh1lKLgM';
 
 export interface GoogleSheetsResponse {
   success: boolean;
@@ -13,6 +13,8 @@ export interface GoogleSheetsResponse {
 
 export const submitToGoogleSheets = async (startupData: StartupData): Promise<GoogleSheetsResponse> => {
   try {
+    console.log('Submitting to Google Sheets:', { SPREADSHEET_ID, API_KEY: API_KEY.substring(0, 10) + '...' });
+    
     // Prepare the data for Google Sheets
     const values = [
       [
@@ -28,24 +30,29 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
       ]
     ];
 
-    const response = await fetch(
-      `${GOOGLE_SHEETS_API_URL}/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=RAW&key=${API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          values: values,
-        }),
-      }
-    );
+    const url = `${GOOGLE_SHEETS_API_URL}/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=RAW&key=${API_KEY}`;
+    console.log('Google Sheets URL:', url);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        values: values,
+      }),
+    });
+
+    console.log('Google Sheets response status:', response.status);
 
     if (!response.ok) {
-      throw new Error(`Google Sheets API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Google Sheets error response:', errorText);
+      throw new Error(`Google Sheets API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('Google Sheets success:', result);
     
     return {
       success: true,
@@ -64,7 +71,7 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
 // Alternative method using Google Apps Script (if you prefer)
 export const submitToGoogleSheetsViaScript = async (startupData: StartupData): Promise<GoogleSheetsResponse> => {
   try {
-    const SCRIPT_URL = process.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'your-apps-script-url';
+    const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'your-apps-script-url';
     
     const response = await fetch(SCRIPT_URL, {
       method: 'POST',
