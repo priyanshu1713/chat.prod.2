@@ -1,27 +1,76 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStartupContext, StartupData } from "@/hooks/useStartupContext";
+import { submitToGoogleSheets } from "@/lib/googleSheets";
 import { toast } from "sonner";
+import { Loader2, CheckCircle, Lock } from "lucide-react";
 
 interface StartupFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+const PRODUCT_STAGES = [
+  "Idea Stage",
+  "MVP Development",
+  "Beta Testing",
+  "Early Revenue",
+  "Growth Stage",
+  "Scale Stage",
+  "Mature Product"
+];
+
+const REVENUE_RANGES = [
+  "Pre-revenue",
+  "$0 - $1K/month",
+  "$1K - $10K/month",
+  "$10K - $50K/month",
+  "$50K - $100K/month",
+  "$100K - $500K/month",
+  "$500K+/month"
+];
+
 export function StartupFormModal({ open, onOpenChange }: StartupFormModalProps) {
-  const { setStartupData, startupData } = useStartupContext();
+  const { setStartupData, startupData, isSubmitted } = useStartupContext();
   const [formData, setFormData] = useState<StartupData>({
-    fullName: startupData?.fullName || '',
-    mobileNumber: startupData?.mobileNumber || '',
-    email: startupData?.email || '',
-    startupIdea: startupData?.startupIdea || ''
+    fullName: '',
+    phoneNumber: '',
+    emailId: '',
+    startupName: '',
+    features: '',
+    productStage: '',
+    revenue: '',
+    isSubmitted: false
   });
   
   const [errors, setErrors] = useState<Partial<StartupData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittedState, setIsSubmittedState] = useState(false);
+
+  // Initialize form data when modal opens
+  useEffect(() => {
+    if (open && startupData) {
+      setFormData(startupData);
+      setIsSubmittedState(startupData.isSubmitted || false);
+    } else if (open) {
+      setFormData({
+        fullName: '',
+        phoneNumber: '',
+        emailId: '',
+        startupName: '',
+        features: '',
+        productStage: '',
+        revenue: '',
+        isSubmitted: false
+      });
+      setIsSubmittedState(false);
+    }
+  }, [open, startupData]);
 
   const validateForm = () => {
     const newErrors: Partial<StartupData> = {};
@@ -30,128 +79,272 @@ export function StartupFormModal({ open, onOpenChange }: StartupFormModalProps) 
       newErrors.fullName = 'Full name is required';
     }
     
-    if (!formData.mobileNumber.trim()) {
-      newErrors.mobileNumber = 'Mobile number is required';
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
     }
     
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+    if (!formData.emailId.trim()) {
+      newErrors.emailId = 'Email ID is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.emailId)) {
+      newErrors.emailId = 'Please enter a valid email';
     }
-    
-    if (!formData.startupIdea.trim()) {
-      newErrors.startupIdea = 'Startup idea is required';
+
+    if (!formData.startupName.trim()) {
+      newErrors.startupName = 'Startup name is required';
+    }
+
+    if (!formData.features.trim()) {
+      newErrors.features = 'Features are required';
+    }
+
+    if (!formData.productStage) {
+      newErrors.productStage = 'Product stage is required';
+    }
+
+    if (!formData.revenue) {
+      newErrors.revenue = 'Revenue is required';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
+
+    if (isSubmittedState) {
+      toast.error("This form has already been submitted and cannot be edited.");
+      return;
+    }
     
-    setStartupData(formData);
-    toast.success("Startup details saved! This context will now be used in all your conversations.");
-    onOpenChange(false);
+    setIsSubmitting(true);
+    
+    try {
+      // Prepare data for submission
+      const dataToSubmit: StartupData = {
+        ...formData,
+        isSubmitted: true,
+        submittedAt: new Date().toISOString()
+      };
+
+      // Submit to Google Sheets
+      const sheetsResult = await submitToGoogleSheets(dataToSubmit);
+      
+      if (sheetsResult.success) {
+        // Save to local context
+        setStartupData(dataToSubmit);
+        setIsSubmittedState(true);
+        toast.success("Startup details saved and submitted to Google Sheets! This form is now locked.");
+      } else {
+        // Still save locally even if Google Sheets fails
+        setStartupData(dataToSubmit);
+        setIsSubmittedState(true);
+        toast.warning(`Details saved locally, but Google Sheets submission failed: ${sheetsResult.message}`);
+      }
+      
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error("Failed to submit form. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (field: keyof StartupData, value: string) => {
+    if (isSubmittedState) return; // Prevent editing if already submitted
+    
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
+  const isFormDisabled = isSubmittedState || isSubmitting;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent className="sm:max-w-2xl bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-card-foreground">My Startup</DialogTitle>
+          <DialogTitle className="text-card-foreground flex items-center gap-2">
+            {isSubmittedState ? (
+              <>
+                <Lock className="w-5 h-5 text-green-500" />
+                My Startup (Submitted)
+              </>
+            ) : (
+              "My Startup"
+            )}
+          </DialogTitle>
           <DialogDescription className="text-text-muted">
-            Tell us about your startup. This information will be used as context for all your conversations with our AI agents.
+            {isSubmittedState 
+              ? "Your startup details have been submitted and locked. This information will be used as context for all your conversations with our AI agents."
+              : "Tell us about your startup. This information will be used as context for all your conversations with our AI agents and will be submitted to Google Sheets."
+            }
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-card-foreground">
-              Full Name *
-            </Label>
-            <Input
-              id="fullName"
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => handleInputChange('fullName', e.target.value)}
-              placeholder="Enter your full name"
-              className={`bg-input border-input-border focus:border-input-focus ${
-                errors.fullName ? 'border-destructive' : ''
-              }`}
-            />
-            {errors.fullName && (
-              <p className="text-sm text-destructive">{errors.fullName}</p>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-card-foreground">
+                Full Name *
+              </Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => handleInputChange('fullName', e.target.value)}
+                placeholder="Enter your full name"
+                disabled={isFormDisabled}
+                className={`bg-input border-input-border focus:border-input-focus ${
+                  errors.fullName ? 'border-destructive' : ''
+                } ${isFormDisabled ? 'opacity-60' : ''}`}
+              />
+              {errors.fullName && (
+                <p className="text-sm text-destructive">{errors.fullName}</p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber" className="text-card-foreground">
+                Phone Number *
+              </Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                placeholder="Enter your phone number"
+                disabled={isFormDisabled}
+                className={`bg-input border-input-border focus:border-input-focus ${
+                  errors.phoneNumber ? 'border-destructive' : ''
+                } ${isFormDisabled ? 'opacity-60' : ''}`}
+              />
+              {errors.phoneNumber && (
+                <p className="text-sm text-destructive">{errors.phoneNumber}</p>
+              )}
+            </div>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="mobileNumber" className="text-card-foreground">
-              Mobile Number *
+            <Label htmlFor="emailId" className="text-card-foreground">
+              Email ID *
             </Label>
             <Input
-              id="mobileNumber"
-              type="text"
-              value={formData.mobileNumber}
-              onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
-              placeholder="Enter your mobile number"
-              className={`bg-input border-input-border focus:border-input-focus ${
-                errors.mobileNumber ? 'border-destructive' : ''
-              }`}
-            />
-            {errors.mobileNumber && (
-              <p className="text-sm text-destructive">{errors.mobileNumber}</p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-card-foreground">
-              Email *
-            </Label>
-            <Input
-              id="email"
+              id="emailId"
               type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
+              value={formData.emailId}
+              onChange={(e) => handleInputChange('emailId', e.target.value)}
               placeholder="Enter your email address"
+              disabled={isFormDisabled}
               className={`bg-input border-input-border focus:border-input-focus ${
-                errors.email ? 'border-destructive' : ''
-              }`}
+                errors.emailId ? 'border-destructive' : ''
+              } ${isFormDisabled ? 'opacity-60' : ''}`}
             />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email}</p>
+            {errors.emailId && (
+              <p className="text-sm text-destructive">{errors.emailId}</p>
             )}
           </div>
-          
+
           <div className="space-y-2">
-            <Label htmlFor="startupIdea" className="text-card-foreground">
-              Startup Idea *
+            <Label htmlFor="startupName" className="text-card-foreground">
+              Startup Name *
+            </Label>
+            <Input
+              id="startupName"
+              type="text"
+              value={formData.startupName}
+              onChange={(e) => handleInputChange('startupName', e.target.value)}
+              placeholder="Enter your startup name"
+              disabled={isFormDisabled}
+              className={`bg-input border-input-border focus:border-input-focus ${
+                errors.startupName ? 'border-destructive' : ''
+              } ${isFormDisabled ? 'opacity-60' : ''}`}
+            />
+            {errors.startupName && (
+              <p className="text-sm text-destructive">{errors.startupName}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="features" className="text-card-foreground">
+              Features *
             </Label>
             <Textarea
-              id="startupIdea"
-              value={formData.startupIdea}
-              onChange={(e) => handleInputChange('startupIdea', e.target.value)}
-              placeholder="Describe your startup idea in detail..."
+              id="features"
+              value={formData.features}
+              onChange={(e) => handleInputChange('features', e.target.value)}
+              placeholder="Describe the key features of your startup/product..."
               rows={4}
+              disabled={isFormDisabled}
               className={`bg-input border-input-border focus:border-input-focus resize-none ${
-                errors.startupIdea ? 'border-destructive' : ''
-              }`}
+                errors.features ? 'border-destructive' : ''
+              } ${isFormDisabled ? 'opacity-60' : ''}`}
             />
-            {errors.startupIdea && (
-              <p className="text-sm text-destructive">{errors.startupIdea}</p>
+            {errors.features && (
+              <p className="text-sm text-destructive">{errors.features}</p>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="productStage" className="text-card-foreground">
+                Product Stage *
+              </Label>
+              <Select
+                value={formData.productStage}
+                onValueChange={(value) => handleInputChange('productStage', value)}
+                disabled={isFormDisabled}
+              >
+                <SelectTrigger className={`bg-input border-input-border focus:border-input-focus ${
+                  errors.productStage ? 'border-destructive' : ''
+                } ${isFormDisabled ? 'opacity-60' : ''}`}>
+                  <SelectValue placeholder="Select product stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRODUCT_STAGES.map((stage) => (
+                    <SelectItem key={stage} value={stage}>
+                      {stage}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.productStage && (
+                <p className="text-sm text-destructive">{errors.productStage}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="revenue" className="text-card-foreground">
+                Revenue *
+              </Label>
+              <Select
+                value={formData.revenue}
+                onValueChange={(value) => handleInputChange('revenue', value)}
+                disabled={isFormDisabled}
+              >
+                <SelectTrigger className={`bg-input border-input-border focus:border-input-focus ${
+                  errors.revenue ? 'border-destructive' : ''
+                } ${isFormDisabled ? 'opacity-60' : ''}`}>
+                  <SelectValue placeholder="Select revenue range" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REVENUE_RANGES.map((range) => (
+                    <SelectItem key={range} value={range}>
+                      {range}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.revenue && (
+                <p className="text-sm text-destructive">{errors.revenue}</p>
+              )}
+            </div>
           </div>
           
           <div className="flex gap-3 pt-2">
@@ -160,16 +353,42 @@ export function StartupFormModal({ open, onOpenChange }: StartupFormModalProps) 
               variant="outline"
               onClick={() => onOpenChange(false)}
               className="flex-1"
+              disabled={isSubmitting}
             >
-              Cancel
+              {isSubmittedState ? 'Close' : 'Cancel'}
             </Button>
-            <Button
-              type="submit"
-              className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
-            >
-              Save Details
-            </Button>
+            {!isSubmittedState && (
+              <Button
+                type="submit"
+                className="flex-1 bg-primary hover:bg-primary-hover text-primary-foreground"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Submit Details
+                  </>
+                )}
+              </Button>
+            )}
           </div>
+
+          {isSubmittedState && (
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Form submitted successfully!</span>
+              </div>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                Your startup details have been saved and submitted to Google Sheets. This form is now locked and cannot be edited.
+              </p>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>
