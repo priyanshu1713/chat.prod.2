@@ -31,6 +31,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Skip Supabase operations if using placeholder credentials
       if (supabaseUrl.includes('placeholder')) {
         console.warn('Supabase not configured - using demo mode')
+        // Create a demo user for testing
+        const demoUser: User = {
+          id: supabaseUser.id,
+          email: supabaseUser.email || 'demo@example.com',
+          full_name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || 'Demo User',
+          avatar_url: supabaseUser.user_metadata?.avatar_url,
+          credits: 5,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+        setUser(demoUser)
         return
       }
 
@@ -59,6 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (insertError) {
           console.error('Error creating user:', insertError)
+          toast({
+            title: "Error",
+            description: "Failed to create user account. Please try again.",
+            variant: "destructive",
+          })
           return
         }
 
@@ -82,9 +98,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       } else if (existingUser) {
         setUser(existingUser)
+        console.log('User loaded:', existingUser.email, 'Credits:', existingUser.credits)
+      } else if (fetchError) {
+        console.error('Error fetching user:', fetchError)
+        toast({
+          title: "Error",
+          description: "Failed to load user data. Please try refreshing the page.",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error('Error initializing user:', error)
+      toast({
+        title: "Error",
+        description: "Failed to initialize user account. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -120,12 +149,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out
   const signOut = async () => {
     try {
+      if (supabaseUrl.includes('placeholder')) {
+        // Demo mode - just clear local state
+        setUser(null)
+        setSession(null)
+        toast({
+          title: "Signed Out",
+          description: "You have been signed out successfully.",
+        })
+        return
+      }
+
       const { error } = await supabase.auth.signOut()
       if (error) throw error
+      
+      // Clear local state
       setUser(null)
       setSession(null)
+      
+      toast({
+        title: "Signed Out",
+        description: "You have been signed out successfully.",
+      })
     } catch (error) {
       console.error('Error signing out:', error)
+      toast({
+        title: "Sign Out Failed",
+        description: "There was an error signing out. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -248,29 +300,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    let mounted = true
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        initializeUser(session.user)
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error getting session:', error)
+          return
+        }
+
+        if (mounted) {
+          setSession(session)
+          if (session?.user) {
+            await initializeUser(session.user)
+          }
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Error in getInitialSession:', error)
+        if (mounted) {
+          setLoading(false)
+        }
       }
-      setLoading(false)
-    })
+    }
+
+    getInitialSession()
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session)
-      if (session?.user) {
-        await initializeUser(session.user)
-      } else {
-        setUser(null)
+      console.log('Auth state changed:', event, session?.user?.email)
+      
+      if (mounted) {
+        setSession(session)
+        if (session?.user) {
+          await initializeUser(session.user)
+        } else {
+          setUser(null)
+        }
+        setLoading(false)
       }
-      setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const value = {
