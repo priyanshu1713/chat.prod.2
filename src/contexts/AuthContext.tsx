@@ -137,8 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             access_type: 'offline',
             prompt: 'consent',
           },
-          // Force redirect mode instead of popup to avoid iframe issues
-          skipBrowserRedirect: false,
         },
       })
       if (error) throw error
