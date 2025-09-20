@@ -133,6 +133,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          // Force redirect mode instead of popup to avoid iframe issues
+          skipBrowserRedirect: false,
         },
       })
       if (error) throw error
