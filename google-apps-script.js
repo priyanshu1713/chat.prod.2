@@ -107,16 +107,16 @@ function handleRequest(e, method) {
       ]]);
     }
     
-    // Prepare the data row
+    // Prepare the data row - handle both flat JSON and nested JSON structures
     const rowData = [
       new Date().toISOString(),
-      data.data.fullName || '',
-      data.data.phoneNumber || '',
-      data.data.emailId || '',
-      data.data.startupName || '',
-      data.data.features || '',
-      data.data.productStage || '',
-      data.data.revenue || '',
+      data.fullName || data.data?.fullName || '',
+      data.phoneNumber || data.data?.phoneNumber || '',
+      data.emailId || data.data?.emailId || '',
+      data.startupName || data.data?.startupName || '',
+      data.features || data.data?.features || '',
+      data.productStage || data.data?.productStage || '',
+      data.revenue || data.data?.revenue || '',
       data.timestamp || new Date().toISOString()
     ];
     
