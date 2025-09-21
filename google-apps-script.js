@@ -51,22 +51,24 @@ function doPost(e) {
     // Append the data to the sheet
     sheet.appendRow(rowData);
     
-    // Return success response
+    // Return success response with CORS headers
     return ContentService
       .createTextOutput(JSON.stringify({
         success: true,
         message: 'Data successfully added to Google Sheets',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        data: rowData
       }))
       .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
-    // Return error response
+    // Return error response with CORS headers
     return ContentService
       .createTextOutput(JSON.stringify({
         success: false,
         message: 'Error adding data to Google Sheets: ' + error.toString(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        error: error.toString()
       }))
       .setMimeType(ContentService.MimeType.JSON);
   }

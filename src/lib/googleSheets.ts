@@ -200,9 +200,12 @@ export const submitToGoogleSheetsViaScript = async (startupData: StartupData): P
     const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID_HERE/exec';
     
     console.log('Submitting via Apps Script to:', SCRIPT_URL);
+    console.log('Data being sent:', startupData);
     
-    const response = await fetch(SCRIPT_URL, {
+    // Try with different fetch options to handle CORS
+    const fetchOptions = {
       method: 'POST',
+      mode: 'cors' as RequestMode,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -210,7 +213,11 @@ export const submitToGoogleSheetsViaScript = async (startupData: StartupData): P
         data: startupData,
         timestamp: new Date().toISOString()
       }),
-    });
+    };
+
+    console.log('Fetch options:', fetchOptions);
+    
+    const response = await fetch(SCRIPT_URL, fetchOptions);
 
     console.log('Apps Script response status:', response.status);
     console.log('Apps Script response headers:', Object.fromEntries(response.headers.entries()));
@@ -231,6 +238,15 @@ export const submitToGoogleSheetsViaScript = async (startupData: StartupData): P
     };
   } catch (error) {
     console.error('Error submitting via Apps Script:', error);
+    
+    // If it's a CORS or network error, provide specific guidance
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return {
+        success: false,
+        message: `Network error: ${error.message}. Please check if the Apps Script URL is correct and the deployment settings allow "Anyone" to execute.`,
+      };
+    }
+    
     return {
       success: false,
       message: `Failed to submit via Apps Script: ${error instanceof Error ? error.message : 'Unknown error'}`,
