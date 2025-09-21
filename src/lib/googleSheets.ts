@@ -3,7 +3,7 @@ import { StartupData } from '@/hooks/useStartupContext';
 // Google Sheets API configuration
 const GOOGLE_SHEETS_API_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
 const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID || '1NruO3pEd2HoXBOt8uv_vV7Jzu5p_r9CBE2RnlkUSSzU';
-const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AIzaSyCxpRFx3PrK0BZxt9Vdf9AvTZdHh1lKLgM';
+const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY || 'AQ.Ab8RN6LhBvMHHo2eknPukvzdKxZIwfXqLNUvBx0QjzocHVgmUw';
 
 export interface GoogleSheetsResponse {
   success: boolean;
@@ -68,7 +68,7 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
   }
 };
 
-// Alternative method using Google Apps Script (if you prefer)
+// Alternative method using Google Apps Script (RECOMMENDED)
 export const submitToGoogleSheetsViaScript = async (startupData: StartupData): Promise<GoogleSheetsResponse> => {
   try {
     const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'your-apps-script-url';
