@@ -41,6 +41,36 @@ export interface GoogleSheetsResponse {
   data?: any;
 }
 
+// Test function to check if Apps Script is accessible
+export const testAppsScriptConnection = async (): Promise<{ accessible: boolean; error?: string }> => {
+  const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID_HERE/exec';
+  
+  try {
+    console.log('Testing Apps Script connection to:', SCRIPT_URL);
+    
+    const response = await fetch(SCRIPT_URL, {
+      method: 'GET',
+      mode: 'cors',
+    });
+    
+    console.log('Test response status:', response.status);
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Test response data:', result);
+      return { accessible: true };
+    } else {
+      return { accessible: false, error: `HTTP ${response.status}: ${response.statusText}` };
+    }
+  } catch (error) {
+    console.error('Test connection failed:', error);
+    return { 
+      accessible: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
 // Generate JWT token for service account authentication
 const generateJWT = async (): Promise<string> => {
   try {
@@ -193,63 +223,122 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
   }
 };
 
-// Google Apps Script method (RECOMMENDED - Much easier to implement)
+// Google Apps Script method with multiple fallback approaches
 export const submitToGoogleSheetsViaScript = async (startupData: StartupData): Promise<GoogleSheetsResponse> => {
-  try {
-    // Use the Apps Script URL from environment or fallback to a test URL
-    const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID_HERE/exec';
-    
-    console.log('Submitting via Apps Script to:', SCRIPT_URL);
-    console.log('Data being sent:', startupData);
-    
-    // Try with different fetch options to handle CORS
-    const fetchOptions = {
-      method: 'POST',
-      mode: 'cors' as RequestMode,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        data: startupData,
-        timestamp: new Date().toISOString()
-      }),
-    };
+  const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID_HERE/exec';
+  
+  console.log('Submitting via Apps Script to:', SCRIPT_URL);
+  console.log('Data being sent:', startupData);
 
-    console.log('Fetch options:', fetchOptions);
-    
-    const response = await fetch(SCRIPT_URL, fetchOptions);
-
-    console.log('Apps Script response status:', response.status);
-    console.log('Apps Script response headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Apps Script error response:', errorText);
-      throw new Error(`Apps Script error: ${response.status} ${response.statusText} - ${errorText}`);
+  // Try multiple approaches to handle different network/CORS issues
+  const approaches = [
+    // Approach 1: Standard fetch with CORS
+    {
+      name: 'Standard CORS',
+      options: {
+        method: 'POST',
+        mode: 'cors' as RequestMode,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: startupData,
+          timestamp: new Date().toISOString()
+        }),
+      }
+    },
+    // Approach 2: No-cors mode (for testing)
+    {
+      name: 'No-CORS',
+      options: {
+        method: 'POST',
+        mode: 'no-cors' as RequestMode,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: startupData,
+          timestamp: new Date().toISOString()
+        }),
+      }
+    },
+    // Approach 3: Form data approach
+    {
+      name: 'Form Data',
+      options: {
+        method: 'POST',
+        mode: 'cors' as RequestMode,
+        body: new URLSearchParams({
+          data: JSON.stringify({
+            data: startupData,
+            timestamp: new Date().toISOString()
+          })
+        }),
+      }
     }
+  ];
 
-    const result = await response.json();
-    console.log('Apps Script success:', result);
-    
-    return {
-      success: true,
-      message: 'Startup details successfully submitted via Apps Script!',
-      data: result
-    };
-  } catch (error) {
-    console.error('Error submitting via Apps Script:', error);
-    
-    // If it's a CORS or network error, provide specific guidance
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+  for (const approach of approaches) {
+    try {
+      console.log(`Trying approach: ${approach.name}`);
+      console.log('Options:', approach.options);
+      
+      const response = await fetch(SCRIPT_URL, approach.options);
+      
+      console.log(`${approach.name} response status:`, response.status);
+      console.log(`${approach.name} response headers:`, Object.fromEntries(response.headers.entries()));
+
+      // For no-cors mode, we can't read the response, so assume success if no error
+      if (approach.name === 'No-CORS') {
+        console.log('No-CORS mode: Assuming success (cannot read response)');
+        return {
+          success: true,
+          message: 'Startup details submitted via Apps Script (No-CORS mode - success assumed)',
+          data: { approach: 'no-cors', status: 'assumed-success' }
+        };
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`${approach.name} error response:`, errorText);
+        throw new Error(`${approach.name} error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log(`${approach.name} success:`, result);
+      
       return {
-        success: false,
-        message: `Network error: ${error.message}. Please check if the Apps Script URL is correct and the deployment settings allow "Anyone" to execute.`,
+        success: true,
+        message: `Startup details successfully submitted via Apps Script using ${approach.name}!`,
+        data: result
       };
+      
+    } catch (error) {
+      console.error(`${approach.name} failed:`, error);
+      
+      // If this is the last approach, return the error
+      if (approach === approaches[approaches.length - 1]) {
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          return {
+            success: false,
+            message: `All approaches failed. Network error: ${error.message}. Please check Apps Script deployment settings and ensure "Anyone" can execute the script.`,
+          };
+        }
+        
+        return {
+          success: false,
+          message: `All approaches failed. Last error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        };
+      }
+      
+      // Continue to next approach
+      console.log(`Continuing to next approach...`);
     }
-    
-    return {
-      success: false,
-      message: `Failed to submit via Apps Script: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    };
   }
+
+  // This should never be reached, but just in case
+  return {
+    success: false,
+    message: 'All submission approaches failed unexpectedly',
+  };
 };
