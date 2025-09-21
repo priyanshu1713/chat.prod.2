@@ -223,122 +223,75 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
   }
 };
 
-// Google Apps Script method with multiple fallback approaches
+// Google Apps Script method with GET request approach for No-CORS compatibility
 export const submitToGoogleSheetsViaScript = async (startupData: StartupData): Promise<GoogleSheetsResponse> => {
   const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID_HERE/exec';
   
   console.log('Submitting via Apps Script to:', SCRIPT_URL);
   console.log('Data being sent:', startupData);
 
-  // Try multiple approaches to handle different network/CORS issues
-  const approaches = [
-    // Approach 1: Standard fetch with CORS
-    {
-      name: 'Standard CORS',
-      options: {
-        method: 'POST',
-        mode: 'cors' as RequestMode,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          data: startupData,
-          timestamp: new Date().toISOString()
-        }),
-      }
-    },
-    // Approach 2: No-cors mode (for testing)
-    {
-      name: 'No-CORS',
-      options: {
-        method: 'POST',
-        mode: 'no-cors' as RequestMode,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          data: startupData,
-          timestamp: new Date().toISOString()
-        }),
-      }
-    },
-    // Approach 3: Form data approach
-    {
-      name: 'Form Data',
-      options: {
-        method: 'POST',
-        mode: 'cors' as RequestMode,
-        body: new URLSearchParams({
-          data: JSON.stringify({
-            data: startupData,
-            timestamp: new Date().toISOString()
-          })
-        }),
-      }
-    }
-  ];
+  // Prepare the data to send
+  const dataToSend = {
+    data: startupData,
+    timestamp: new Date().toISOString()
+  };
 
-  for (const approach of approaches) {
+  // Try GET request with query parameters first (No-CORS compatible)
+  try {
+    const getUrl = `${SCRIPT_URL}?action=submit&data=${encodeURIComponent(JSON.stringify(dataToSend))}`;
+    console.log('Trying GET request with query parameters');
+    console.log('GET URL:', getUrl);
+    
+    const response = await fetch(getUrl, {
+      method: 'GET',
+      mode: 'no-cors',
+    });
+    
+    console.log('GET request completed (No-CORS mode)');
+    
+    // For No-CORS, we can't read the response, so assume success
+    return {
+      success: true,
+      message: 'Startup details submitted via Apps Script (GET method - success assumed)',
+      data: { approach: 'get-query-params', status: 'assumed-success' }
+    };
+    
+  } catch (error) {
+    console.error('GET request failed:', error);
+    
+    // Fallback to POST request
     try {
-      console.log(`Trying approach: ${approach.name}`);
-      console.log('Options:', approach.options);
+      console.log('Falling back to POST request');
       
-      const response = await fetch(SCRIPT_URL, approach.options);
-      
-      console.log(`${approach.name} response status:`, response.status);
-      console.log(`${approach.name} response headers:`, Object.fromEntries(response.headers.entries()));
-
-      // For no-cors mode, we can't read the response, so assume success if no error
-      if (approach.name === 'No-CORS') {
-        console.log('No-CORS mode: Assuming success (cannot read response)');
-        return {
-          success: true,
-          message: 'Startup details submitted via Apps Script (No-CORS mode - success assumed)',
-          data: { approach: 'no-cors', status: 'assumed-success' }
-        };
-      }
+      const response = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend),
+      });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`${approach.name} error response:`, errorText);
-        throw new Error(`${approach.name} error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`POST request failed: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log(`${approach.name} success:`, result);
+      console.log('POST request success:', result);
       
       return {
         success: true,
-        message: `Startup details successfully submitted via Apps Script using ${approach.name}!`,
+        message: 'Startup details successfully submitted via Apps Script using POST!',
         data: result
       };
       
-    } catch (error) {
-      console.error(`${approach.name} failed:`, error);
+    } catch (postError) {
+      console.error('POST request also failed:', postError);
       
-      // If this is the last approach, return the error
-      if (approach === approaches[approaches.length - 1]) {
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-          return {
-            success: false,
-            message: `All approaches failed. Network error: ${error.message}. Please check Apps Script deployment settings and ensure "Anyone" can execute the script.`,
-          };
-        }
-        
-        return {
-          success: false,
-          message: `All approaches failed. Last error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        };
-      }
-      
-      // Continue to next approach
-      console.log(`Continuing to next approach...`);
+      return {
+        success: false,
+        message: `Both GET and POST requests failed. Last error: ${postError instanceof Error ? postError.message : 'Unknown error'}`,
+      };
     }
   }
-
-  // This should never be reached, but just in case
-  return {
-    success: false,
-    message: 'All submission approaches failed unexpectedly',
-  };
 };
