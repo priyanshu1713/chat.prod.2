@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStartupContext, StartupData } from "@/hooks/useStartupContext";
-import { submitToGoogleSheets } from "@/lib/googleSheets";
+import { submitToGoogleSheetsViaScript } from "@/lib/googleSheets";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Lock } from "lucide-react";
 
@@ -131,8 +131,8 @@ export function StartupFormModal({ open, onOpenChange }: StartupFormModalProps) 
         submittedAt: new Date().toISOString()
       };
 
-      // Submit to Google Sheets via direct API
-      const sheetsResult = await submitToGoogleSheets(dataToSubmit);
+      // Submit to Google Sheets via Apps Script
+      const sheetsResult = await submitToGoogleSheetsViaScript(dataToSubmit);
       
       if (sheetsResult.success) {
         // Save to local context

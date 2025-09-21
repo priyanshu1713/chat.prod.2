@@ -196,7 +196,10 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
 // Google Apps Script method (RECOMMENDED - Much easier to implement)
 export const submitToGoogleSheetsViaScript = async (startupData: StartupData): Promise<GoogleSheetsResponse> => {
   try {
-    const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'your-apps-script-url';
+    // Use the Apps Script URL from environment or fallback to a test URL
+    const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID_HERE/exec';
+    
+    console.log('Submitting via Apps Script to:', SCRIPT_URL);
     
     const response = await fetch(SCRIPT_URL, {
       method: 'POST',
@@ -209,11 +212,17 @@ export const submitToGoogleSheetsViaScript = async (startupData: StartupData): P
       }),
     });
 
+    console.log('Apps Script response status:', response.status);
+    console.log('Apps Script response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
-      throw new Error(`Apps Script error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Apps Script error response:', errorText);
+      throw new Error(`Apps Script error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('Apps Script success:', result);
     
     return {
       success: true,
