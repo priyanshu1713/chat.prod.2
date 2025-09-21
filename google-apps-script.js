@@ -32,10 +32,19 @@ function handleRequest(e, method) {
     let data;
     
     // Handle different data formats
-    if (method === 'GET' && e.parameter && e.parameter.data) {
-      console.log('Processing GET parameter data:', e.parameter.data);
-      data = JSON.parse(e.parameter.data);
-      console.log('Successfully parsed GET data:', data);
+    if (method === 'GET' && e.parameter) {
+      console.log('Processing GET request with parameters:', e.parameter);
+      
+      // Check if this is a submit action
+      if (e.parameter.action === 'submit' && e.parameter.data) {
+        console.log('Processing GET submit data:', e.parameter.data);
+        data = JSON.parse(e.parameter.data);
+        console.log('Successfully parsed GET submit data:', data);
+      } else if (e.parameter.data) {
+        console.log('Processing GET parameter data:', e.parameter.data);
+        data = JSON.parse(e.parameter.data);
+        console.log('Successfully parsed GET data:', data);
+      }
     } else if (method === 'POST' && e && e.postData && e.postData.contents) {
       console.log('Processing POST data:', e.postData.contents);
       try {
