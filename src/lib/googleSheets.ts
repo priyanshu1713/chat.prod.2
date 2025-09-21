@@ -63,16 +63,34 @@ const generateJWT = async (): Promise<string> => {
   
   const signatureInput = `${encodedHeader}.${encodedPayload}`;
 
-  // Import the private key
-  const keyData = {
-    kty: 'RSA',
-    n: '', // We'll use Web Crypto API for signing
-    e: 'AQAB',
-    d: PRIVATE_KEY.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, ''),
-  };
-
   try {
-    // For now, we'll use a simpler approach with fetch to get access token
+    // Use Web Crypto API to sign the JWT
+    const keyData = await crypto.subtle.importKey(
+      'pkcs8',
+      new TextEncoder().encode(PRIVATE_KEY),
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: 'SHA-256',
+      },
+      false,
+      ['sign']
+    );
+
+    const signature = await crypto.subtle.sign(
+      'RSASSA-PKCS1-v1_5',
+      keyData,
+      new TextEncoder().encode(signatureInput)
+    );
+
+    // Convert signature to base64url
+    const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+
+    const jwt = `${signatureInput}.${signatureBase64}`;
+
+    // Exchange JWT for access token
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -80,12 +98,13 @@ const generateJWT = async (): Promise<string> => {
       },
       body: new URLSearchParams({
         grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion: signatureInput, // This is a simplified version
+        assertion: jwt,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Token request failed: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Token request failed: ${response.status} - ${errorText}`);
     }
 
     const tokenData = await response.json();
@@ -100,8 +119,9 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
   try {
     console.log('Submitting to Google Sheets with service account authentication...');
     
-    // For now, let's use a simpler approach with a public sheet
-    // You'll need to make your Google Sheet publicly writable or use Apps Script
+    // Get access token using service account
+    const accessToken = await generateJWT();
+    console.log('Access token obtained successfully');
     
     // Prepare the data for Google Sheets
     const values = [
@@ -118,12 +138,28 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
       ]
     ];
 
-    // Try direct API call first (this will work if the sheet is public)
-    const url = `${GOOGLE_SHEETS_API_URL}/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=RAW`;
+    // First, check if the sheet exists and has headers
+    const sheetUrl = `${GOOGLE_SHEETS_API_URL}/${SPREADSHEET_ID}/values/Sheet1!A1:I1`;
+    const sheetResponse = await fetch(sheetUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (sheetResponse.ok) {
+      const sheetData = await sheetResponse.json();
+      console.log('Sheet headers:', sheetData.values);
+    } else {
+      console.log('Sheet might not exist or no headers found, will append data');
+    }
+
+    // Append data to the sheet
+    const appendUrl = `${GOOGLE_SHEETS_API_URL}/${SPREADSHEET_ID}/values/Sheet1:append?valueInputOption=RAW`;
     
-    const response = await fetch(url, {
+    const response = await fetch(appendUrl, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -137,10 +173,9 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
       const errorText = await response.text();
       console.error('Google Sheets error response:', errorText);
       
-      // If direct API fails, suggest using Apps Script
       return {
         success: false,
-        message: `Google Sheets API requires authentication. Please use Google Apps Script method or make the sheet publicly writable. Error: ${response.status} ${response.statusText}`,
+        message: `Google Sheets API error: ${response.status} ${response.statusText} - ${errorText}`,
       };
     }
 
