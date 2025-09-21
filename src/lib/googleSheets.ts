@@ -223,75 +223,50 @@ export const submitToGoogleSheets = async (startupData: StartupData): Promise<Go
   }
 };
 
-// Google Apps Script method with GET request approach for No-CORS compatibility
+// Google Apps Script method with proper data structure
 export const submitToGoogleSheetsViaScript = async (startupData: StartupData): Promise<GoogleSheetsResponse> => {
   const SCRIPT_URL = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID_HERE/exec';
   
   console.log('Submitting via Apps Script to:', SCRIPT_URL);
   console.log('Data being sent:', startupData);
 
-  // Prepare the data to send
-  const dataToSend = {
+  // Prepare the data to send - wrap formData inside { data: formData }
+  const payload = {
     data: startupData,
     timestamp: new Date().toISOString()
   };
 
-  // Try GET request with query parameters first (No-CORS compatible)
+  console.log('Payload:', payload);
+
   try {
-    const getUrl = `${SCRIPT_URL}?action=submit&data=${encodeURIComponent(JSON.stringify(dataToSend))}`;
-    console.log('Trying GET request with query parameters');
-    console.log('GET URL:', getUrl);
-    
-    const response = await fetch(getUrl, {
-      method: 'GET',
-      mode: 'no-cors',
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
+
+    if (!response.ok) {
+      throw new Error(`POST request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('POST request success:', result);
     
-    console.log('GET request completed (No-CORS mode)');
-    
-    // For No-CORS, we can't read the response, so assume success
     return {
       success: true,
-      message: 'Startup details submitted via Apps Script (GET method - success assumed)',
-      data: { approach: 'get-query-params', status: 'assumed-success' }
+      message: 'Startup details successfully submitted via Apps Script!',
+      data: result
     };
     
   } catch (error) {
-    console.error('GET request failed:', error);
+    console.error('POST request failed:', error);
     
-    // Fallback to POST request
-    try {
-      console.log('Falling back to POST request');
-      
-      const response = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-      });
-
-      if (!response.ok) {
-        throw new Error(`POST request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('POST request success:', result);
-      
-      return {
-        success: true,
-        message: 'Startup details successfully submitted via Apps Script using POST!',
-        data: result
-      };
-      
-    } catch (postError) {
-      console.error('POST request also failed:', postError);
-      
-      return {
-        success: false,
-        message: `Both GET and POST requests failed. Last error: ${postError instanceof Error ? postError.message : 'Unknown error'}`,
-      };
-    }
+    return {
+      success: false,
+      message: `Failed to submit via Apps Script: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
   }
 };
