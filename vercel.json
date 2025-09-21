@@ -25,6 +25,7 @@
     "VITE_SUPABASE_URL": "https://placeholder.supabase.co",
     "VITE_SUPABASE_ANON_KEY": "placeholder_key",
     "VITE_GOOGLE_SHEETS_ID": "1NruO3pEd2HoXBOt8uv_vV7Jzu5p_r9CBE2RnlkUSSzU",
-    "VITE_GOOGLE_SHEETS_API_KEY": "AQ.Ab8RN6LhBvMHHo2eknPukvzdKxZIwfXqLNUvBx0QjzocHVgmUw"
+    "VITE_GOOGLE_SHEETS_API_KEY": "AQ.Ab8RN6LhBvMHHo2eknPukvzdKxZIwfXqLNUvBx0QjzocHVgmUw",
+    "VITE_GOOGLE_APPS_SCRIPT_URL": "https://script.google.com/macros/s/AKfycbyXaE6eg5PWri3-fKtxS2BW7srgYiNOJhyxXf-vYlkDwn5t4paC2fPvFdL8UmIjpwXeqg/exec"
   }
 }
