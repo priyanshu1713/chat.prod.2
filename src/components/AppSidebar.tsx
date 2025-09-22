@@ -83,20 +83,15 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="p-2">
-        {/* My Startup Button */}
+        {/* My Startup Button - Coming Soon */}
         <div className="mb-4">
           <Button 
             variant="secondary" 
-            onClick={() => setShowStartupModal(true)}
-            className={cn(
-              "w-full justify-start gap-3 border-border transition-colors",
-              hasStartupData() 
-                ? "bg-primary/10 hover:bg-primary/20 border-primary/30 text-primary" 
-                : "bg-surface hover:bg-surface-hover"
-            )}
+            disabled
+            className="w-full justify-start gap-3 border-border transition-colors opacity-50 cursor-not-allowed bg-surface"
           >
             <Building2 className="w-4 h-4" />
-            {!isCollapsed && (hasStartupData() ? "My Startup ✓" : "My Startup")}
+            {!isCollapsed && "My Startup - Coming Soon"}
           </Button>
         </div>
 

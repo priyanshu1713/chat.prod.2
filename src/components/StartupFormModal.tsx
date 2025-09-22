@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useStartupContext, StartupData } from "@/hooks/useStartupContext";
 import { submitToNotion } from "@/lib/notion";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, Lock } from "lucide-react";
+import { Loader2, CheckCircle, Lock, Building2 } from "lucide-react";
 
 interface StartupFormModalProps {
   open: boolean;
@@ -171,23 +171,37 @@ export function StartupFormModal({ open, onOpenChange }: StartupFormModalProps) 
       <DialogContent className="sm:max-w-2xl bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-card-foreground flex items-center gap-2">
-            {isSubmittedState ? (
-              <>
-                <Lock className="w-5 h-5 text-green-500" />
-                My Startup (Submitted)
-              </>
-            ) : (
-              "My Startup"
-            )}
+            My Startup - Coming Soon
           </DialogTitle>
           <DialogDescription className="text-text-muted">
-            {isSubmittedState 
-              ? "Your startup details have been submitted and locked. This information will be used as context for all your conversations with our AI agents."
-              : "Tell us about your startup. This information will be used as context for all your conversations with our AI agents and will be submitted to Google Sheets."
-            }
+            The startup form feature is currently under development. Stay tuned for updates!
           </DialogDescription>
         </DialogHeader>
         
+        <div className="py-8 text-center">
+          <div className="mb-6">
+            <Building2 className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-card-foreground mb-2">
+              Coming Soon
+            </h3>
+            <p className="text-text-muted">
+              We're working hard to bring you an amazing startup form experience. 
+              This feature will be available soon!
+            </p>
+          </div>
+          
+          <div className="space-y-2 text-sm text-text-muted">
+            <p>✨ Planned features:</p>
+            <ul className="list-disc list-inside space-y-1 text-left max-w-md mx-auto">
+              <li>Comprehensive startup profile creation</li>
+              <li>Integration with AI agents for personalized insights</li>
+              <li>Progress tracking and milestone management</li>
+              <li>Data export and analytics</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="hidden">
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -390,6 +404,7 @@ export function StartupFormModal({ open, onOpenChange }: StartupFormModalProps) 
             </div>
           )}
         </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
