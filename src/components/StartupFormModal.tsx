@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStartupContext, StartupData } from "@/hooks/useStartupContext";
-import { submitToGoogleSheetsViaScript } from "@/lib/googleSheets";
+import { submitToNotion } from "@/lib/notion";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Lock } from "lucide-react";
 
@@ -131,19 +131,19 @@ export function StartupFormModal({ open, onOpenChange }: StartupFormModalProps) 
         submittedAt: new Date().toISOString()
       };
 
-      // Submit to Google Sheets via Apps Script
-      const sheetsResult = await submitToGoogleSheetsViaScript(dataToSubmit);
+      // Submit to Notion
+      const notionResult = await submitToNotion(dataToSubmit);
       
-      if (sheetsResult.success) {
+      if (notionResult.success) {
         // Save to local context
         setStartupData(dataToSubmit);
         setIsSubmittedState(true);
-        toast.success("Startup details saved and submitted to Google Sheets! This form is now locked.");
+        toast.success("Startup details saved and submitted to Notion! This form is now locked.");
       } else {
-        // Still save locally even if Google Sheets fails
+        // Still save locally even if Notion fails
         setStartupData(dataToSubmit);
         setIsSubmittedState(true);
-        toast.warning(`Details saved locally, but Google Sheets submission failed: ${sheetsResult.message}`);
+        toast.warning(`Details saved locally, but Notion submission failed: ${notionResult.message}`);
       }
       
       onOpenChange(false);
