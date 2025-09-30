@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import { StartupFormModal } from "@/components/StartupFormModal";
+import { useChat } from "@/contexts/ChatContext";
+import { useNavigate } from "react-router-dom";
+import { getRouteForAgent } from "@/contexts/ChatContext";
 import { useStartupContext } from "@/hooks/useStartupContext";
 
 // Import agent profile images
@@ -36,19 +39,18 @@ const modules = [{
   avatar: MakAvatar,
   description: "Social media handler, automates posts and generates captions"
 }];
-const chatHistory = [{
-  id: 1,
-  title: "SaaS Platform for Remote Teams",
-  timestamp: "2 hours ago"
-}, {
-  id: 2,
-  title: "AI-Powered Content Generator",
-  timestamp: "1 day ago"
-}, {
-  id: 3,
-  title: "Sustainable Fashion Marketplace",
-  timestamp: "3 days ago"
-}];
+function timeAgo(iso: string): string {
+  const now = new Date().getTime()
+  const then = new Date(iso).getTime()
+  const diff = Math.max(0, now - then)
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
 export function AppSidebar() {
   const {
     state,
@@ -58,6 +60,8 @@ export function AppSidebar() {
   const { hasStartupData } = useStartupContext();
   const location = useLocation();
   const isCollapsed = state === "collapsed" && !isMobile; // Never collapse on mobile
+  const { chats, setActiveChat } = useChat();
+  const navigate = useNavigate();
   const [isModulesExpanded, setIsModulesExpanded] = useState(true);
   const [showStartupModal, setShowStartupModal] = useState(false);
   const isActive = (path: string) => location.pathname === path;
@@ -152,21 +156,31 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {chatHistory.map(chat => <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton className="h-auto p-0">
+              {chats.map(chat => (
+                <SidebarMenuItem key={chat.id}>
+                  <SidebarMenuButton
+                    className="h-auto p-0"
+                    onClick={() => {
+                      setActiveChat(chat.id);
+                      navigate(getRouteForAgent(chat.agent));
+                    }}
+                  >
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors w-full text-left">
                       <MessageSquare className="w-3 h-3 flex-shrink-0 text-sidebar-foreground" />
-                      {!isCollapsed && <div className="flex-1 min-w-0">
+                      {!isCollapsed && (
+                        <div className="flex-1 min-w-0">
                           <div className="text-sm text-sidebar-foreground truncate">
-                            {chat.title}
+                            {chat.title} <span className="opacity-60">• {chat.agent || 'General'}</span>
                           </div>
                           <div className="text-xs text-sidebar-foreground opacity-70">
-                            {chat.timestamp}
+                            {timeAgo(chat.updated_at || chat.created_at)}
                           </div>
-                        </div>}
+                        </div>
+                      )}
                     </div>
                   </SidebarMenuButton>
-                </SidebarMenuItem>)}
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

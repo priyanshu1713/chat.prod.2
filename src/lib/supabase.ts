@@ -26,3 +26,21 @@ export interface CreditTransaction {
   module?: string
   created_at: string
 }
+
+export type ChatAgent = 'Vira' | 'Bizzy' | 'Artie' | 'Mak' | 'General'
+
+export interface ChatMessage {
+  role: 'user' | 'agent'
+  content: string
+  timestamp: string
+}
+
+export interface Chat {
+  id: string
+  user_id: string
+  agent: ChatAgent
+  title: string
+  messages: ChatMessage[]
+  created_at: string
+  updated_at: string
+}

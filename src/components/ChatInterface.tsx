@@ -12,6 +12,7 @@ import { useStartupContext } from "@/hooks/useStartupContext";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { LoadingState } from "@/components/LoadingState";
 import { usePDFGenerator } from "@/hooks/usePDFGenerator";
+import { useChat } from "@/contexts/ChatContext";
 
 // Import agent profile images
 const ViraAvatar = "https://i.ibb.co/TB072BQ1/Vira.png";
@@ -72,6 +73,7 @@ export function ChatInterface() {
   const navigate = useNavigate();
   const { getContextString } = useStartupContext();
   const { generateReportPDF } = usePDFGenerator();
+  const { activeChat, activeChatId, startNewChat, appendMessageToActive, setActiveChat } = useChat();
   const { credits, deductCredit, isLoggedIn, isDemoUser, enableDemoUser, showLoginModal, showPurchaseModal, showOutOfCreditsModal } = useCreditSystem();
   const [showLogin, setShowLogin] = useState(false);
   
@@ -121,6 +123,21 @@ export function ChatInterface() {
     scrollToBottom();
   }, [messages]);
 
+  // Hydrate UI from active chat for agent routes
+  useEffect(() => {
+    if (!activeChat) return;
+    // Only reflect chats that match current agent route
+    const currentAgent = moduleInfo.title as 'Vira' | 'Bizzy' | 'Artie' | 'Mak'
+    if (activeChat.agent !== currentAgent) return;
+    const mapped = activeChat.messages.map(m => ({
+      id: `${m.timestamp}`,
+      content: m.content,
+      role: m.role === 'user' ? 'user' : 'assistant',
+      timestamp: new Date(m.timestamp),
+    }));
+    setMessages(mapped);
+  }, [activeChat, moduleInfo.title]);
+
   const handleModuleSelect = async (module: typeof moduleCards[0]) => {
     if (!isLoggedIn && !isDemoUser) {
       setShowLogin(true);
@@ -163,6 +180,19 @@ export function ChatInterface() {
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+
+    // Persist chat creation/appending for agent context
+    try {
+      const agentName = moduleInfo.title as 'Vira' | 'Bizzy' | 'Artie' | 'Mak'
+      if (!activeChatId) {
+        const created = await startNewChat(agentName, userMessage.content);
+        if (created) setActiveChat(created.id);
+      } else {
+        await appendMessageToActive({ role: 'user', content: userMessage.content });
+      }
+    } catch (e) {
+      console.error('Chat persistence error (agent):', e);
+    }
 
     // Deduct credit for analysis
     const success = await deductCredit("AI Analysis", getModuleInfo().title);
@@ -214,6 +244,10 @@ export function ChatInterface() {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, aiMessage]);
+
+        try {
+          await appendMessageToActive({ role: 'agent', content: aiMessage.content });
+        } catch {}
       } catch (error) {
         console.error('Stack-AI API error:', error);
         const errorMessage: Message = {
@@ -223,6 +257,7 @@ export function ChatInterface() {
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, errorMessage]);
+        try { await appendMessageToActive({ role: 'agent', content: errorMessage.content }); } catch {}
       } finally {
         setIsLoading(false);
       }
@@ -237,6 +272,9 @@ export function ChatInterface() {
         };
         setMessages(prev => [...prev, aiMessage]);
         setIsLoading(false);
+
+        // Persist simulated assistant message
+        appendMessageToActive({ role: 'agent', content: aiMessage.content }).catch(() => {})
       }, 3000);
     }
   };
