@@ -138,12 +138,7 @@ export function Homepage() {
       console.error('Chat persistence error (homepage):', e);
     }
 
-    // Deduct credit for analysis
-    const success = await deductCredit("AI Analysis", "Homepage");
-    if (!success) {
-      setIsLoading(false);
-      return;
-    }
+    // Move credit deduction to after successful response
 
     try {
       // Prepare message with startup context if available
@@ -177,6 +172,11 @@ export function Homepage() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMessage]);
+
+      // Deduct credit only after a successful response
+      try {
+        await deductCredit("AI Analysis", "Homepage");
+      } catch {}
 
       // Persist assistant message
       try {

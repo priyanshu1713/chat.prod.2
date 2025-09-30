@@ -194,12 +194,7 @@ export function ChatInterface() {
       console.error('Chat persistence error (agent):', e);
     }
 
-    // Deduct credit for analysis
-    const success = await deductCredit("AI Analysis", getModuleInfo().title);
-    if (!success) {
-      setIsLoading(false);
-      return;
-    }
+    // Move credit deduction to after successful response
 
     // Call Stack-AI API for Vira and Bizzy pages
     if (location.pathname === "/vira" || location.pathname === "/bizzy") {
@@ -248,6 +243,11 @@ export function ChatInterface() {
         try {
           await appendMessageToActive({ role: 'agent', content: aiMessage.content });
         } catch {}
+
+        // Deduct one credit only after a successful assistant response
+        try {
+          await deductCredit("AI Analysis", moduleInfo.title);
+        } catch {}
       } catch (error) {
         console.error('Stack-AI API error:', error);
         const errorMessage: Message = {
@@ -275,6 +275,9 @@ export function ChatInterface() {
 
         // Persist simulated assistant message
         appendMessageToActive({ role: 'agent', content: aiMessage.content }).catch(() => {})
+
+        // Deduct one credit for simulated response too
+        deductCredit("AI Analysis", moduleInfo.title).catch(() => {})
       }, 3000);
     }
   };
