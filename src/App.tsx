@@ -14,6 +14,8 @@ import Artie from "./pages/Artie";
 import Mak from "./pages/Mak";
 import Vira from "./pages/Vira";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import RequireAuth from "@/components/RequireAuth";
 
 const queryClient = new QueryClient();
 
@@ -35,11 +37,12 @@ const App = () => {
               {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/bizzy" element={<Bizzy />} />
-                  <Route path="/artie" element={<Artie />} />
-                  <Route path="/mak" element={<Mak />} />
-                  <Route path="/vira" element={<Vira />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/" element={<RequireAuth><Index /></RequireAuth>} />
+                <Route path="/bizzy" element={<RequireAuth><Bizzy /></RequireAuth>} />
+                <Route path="/artie" element={<RequireAuth><Artie /></RequireAuth>} />
+                <Route path="/mak" element={<RequireAuth><Mak /></RequireAuth>} />
+                <Route path="/vira" element={<RequireAuth><Vira /></RequireAuth>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
