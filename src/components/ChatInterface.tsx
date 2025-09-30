@@ -181,10 +181,10 @@ export function ChatInterface() {
     setInput("");
     setIsLoading(true);
 
-    // Persist chat creation/appending for agent context
+    // Persist chat creation/appending for agent context; ensure correct agent
     try {
       const agentName = moduleInfo.title as 'Vira' | 'Bizzy' | 'Artie' | 'Mak'
-      if (!activeChatId) {
+      if (!activeChat || activeChat.agent !== agentName) {
         const created = await startNewChat(agentName, userMessage.content);
         if (created) setActiveChat(created.id);
       } else {

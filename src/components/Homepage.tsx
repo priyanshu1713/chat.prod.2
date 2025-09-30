@@ -124,9 +124,9 @@ export function Homepage() {
     setSearchQuery("");
     setIsLoading(true);
 
-    // Persist chat creation/appending
+    // Persist chat creation/appending in General context only
     try {
-      if (!activeChatId) {
+      if (!activeChat || activeChat.agent !== 'General') {
         const created = await startNewChat('General', userMessage.content);
         if (created) {
           setActiveChat(created.id);
