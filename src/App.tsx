@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ChatProvider } from "@/contexts/ChatContext";
 import Preloader from "./components/Preloader";
 import Index from "./pages/Index";
 import Bizzy from "./pages/Bizzy";
@@ -28,20 +29,22 @@ const App = () => {
       <ThemeProvider defaultTheme="dark" storageKey="productica-ui-theme">
         <TooltipProvider>
           <AuthProvider>
-            <Toaster />
-            <Sonner />
-            {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/bizzy" element={<Bizzy />} />
-                <Route path="/artie" element={<Artie />} />
-                <Route path="/mak" element={<Mak />} />
-                <Route path="/vira" element={<Vira />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+            <ChatProvider>
+              <Toaster />
+              <Sonner />
+              {showPreloader && <Preloader onComplete={handlePreloaderComplete} />}
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/bizzy" element={<Bizzy />} />
+                  <Route path="/artie" element={<Artie />} />
+                  <Route path="/mak" element={<Mak />} />
+                  <Route path="/vira" element={<Vira />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </ChatProvider>
           </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>

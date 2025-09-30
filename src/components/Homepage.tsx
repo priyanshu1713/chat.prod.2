@@ -9,6 +9,8 @@ import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useStartupContext } from "@/hooks/useStartupContext";
 import { usePDFGenerator } from "@/hooks/usePDFGenerator";
+import { useChat } from "@/contexts/ChatContext";
+import type { Chat } from "@/lib/supabase";
 
 interface Message {
   id: string;
@@ -50,6 +52,7 @@ export function Homepage() {
     deductCredit
   } = useCreditSystem();
   const [showLogin, setShowLogin] = useState(false);
+  const { activeChat, activeChatId, startNewChat, appendMessageToActive, setActiveChat } = useChat();
   const [searchQuery, setSearchQuery] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,6 +66,21 @@ export function Homepage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Sync UI with active chat (General)
+  useEffect(() => {
+    if (!activeChat) return;
+    if (activeChat && activeChat.agent === 'General') {
+      setIsChatMode(true);
+      const mapped = activeChat.messages.map(m => ({
+        id: `${m.timestamp}`,
+        content: m.content,
+        role: m.role === 'user' ? 'user' : 'assistant',
+        timestamp: new Date(m.timestamp),
+      }));
+      setMessages(mapped);
+    }
+  }, [activeChat]);
   const handleQuickAction = async (path: string) => {
     if (!isLoggedIn && !isDemoUser) {
       setShowLogin(true);
@@ -106,6 +124,20 @@ export function Homepage() {
     setSearchQuery("");
     setIsLoading(true);
 
+    // Persist chat creation/appending
+    try {
+      if (!activeChatId) {
+        const created = await startNewChat('General', userMessage.content);
+        if (created) {
+          setActiveChat(created.id);
+        }
+      } else {
+        await appendMessageToActive({ role: 'user', content: userMessage.content });
+      }
+    } catch (e) {
+      console.error('Chat persistence error (homepage):', e);
+    }
+
     // Deduct credit for analysis
     const success = await deductCredit("AI Analysis", "Homepage");
     if (!success) {
@@ -145,6 +177,13 @@ export function Homepage() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMessage]);
+
+      // Persist assistant message
+      try {
+        await appendMessageToActive({ role: 'agent', content: aiMessage.content });
+      } catch (e) {
+        console.error('Failed to persist assistant message (homepage):', e);
+      }
     } catch (error) {
       console.error('Stack-AI API error:', error);
       const errorMessage: Message = {
@@ -154,6 +193,11 @@ export function Homepage() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
+
+      // Persist assistant error message
+      try {
+        await appendMessageToActive({ role: 'agent', content: errorMessage.content });
+      } catch {}
     } finally {
       setIsLoading(false);
     }

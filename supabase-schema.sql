@@ -68,3 +68,34 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON public.users TO anon, authenticated;
 GRANT ALL ON public.credit_transactions TO anon, authenticated;
+
+-- Chats persistence
+CREATE TABLE IF NOT EXISTS public.chats (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+  agent TEXT CHECK (agent IN ('Vira','Bizzy','Artie','Mak','General')) NOT NULL,
+  title TEXT NOT NULL,
+  messages JSONB DEFAULT '[]'::jsonb NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own chats" ON public.chats
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own chats" ON public.chats
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own chats" ON public.chats
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_chats_user_id ON public.chats(user_id);
+CREATE INDEX IF NOT EXISTS idx_chats_created_at ON public.chats(created_at DESC);
+
+-- Trigger for chats updated_at
+CREATE TRIGGER handle_chats_updated_at
+  BEFORE UPDATE ON public.chats
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_updated_at();
